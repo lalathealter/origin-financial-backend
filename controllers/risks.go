@@ -14,39 +14,69 @@ func HandleRisksCalculation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, clientData)
+	riskProf := calculateRiskProfile(&clientData)
+	c.JSON(http.StatusCreated, riskProf)
 }
 
-type ClientInformationRisks struct {
-	Age           uint               `binding:"gt=0,required"`
-	Dependents    uint               `binding:"gte=0,required"`
-	House         HouseData          `binding:"omitempty"`
-	Income        uint               `binding:"gt=0,required"`
-	Marital       MaritalStatus      `json:"marital_status" binding:"oneof='married' 'single',required"`
-	RiskQuestions RiskQuestionsSlice `json:"risk_questions" binding:"required"`
-	Vehicle       VehicleData        `binding:"omitempty"`
+func calculateRiskProfile(cinfo *ClientInformationRisks) RiskProfile {
+	rsholder := MakeRiskScoreHolder(cinfo)
+
+	if cinfo.Income == 0 {
+		rsholder.SetIneligible(Disability)
+	} else if cinfo.Income > 200_000 {
+		rsholder.AddToEveryField(-1)
+	}
+
+	if cinfo.Age > 60 {
+		rsholder.SetIneligible(Disability)
+		rsholder.SetIneligible(Life)
+	} else if cinfo.Age < 30 {
+		rsholder.AddToEveryField(-2)
+	} else if cinfo.Age >= 30 && cinfo.Age <= 40 {
+		rsholder.AddToEveryField(-1)
+	}
+
+	if cinfo.House.Ownership == NoHouse {
+		rsholder.SetIneligible(Home)
+	} else if cinfo.House.Ownership == Mortgaged {
+		rsholder.AddScoreTo(Disability, 1)
+		rsholder.AddScoreTo(Home, 1)
+	}
+
+	if cinfo.Dependents > 0 {
+		rsholder.AddScoreTo(Disability, 1)
+		rsholder.AddScoreTo(Life, 1)
+	}
+
+	if cinfo.Marital == Married {
+		rsholder.AddScoreTo(Life, 1)
+		rsholder.AddScoreTo(Disability, -1)
+	}
+
+	if cinfo.HasNoVehicle() {
+		rsholder.SetIneligible(Auto)
+	} else if cinfo.Vehicle.WasProducedLessThanYearsAgo(5) {
+		rsholder.AddScoreTo(Auto, 1)
+	}
+
+	return ProduceRiskProfile(rsholder)
 }
 
-type RiskQuestionsSlice [3]uint
-
-type MaritalStatus string
-
-const (
-	Married MaritalStatus = "married"
-	Single  MaritalStatus = "single"
-)
-
-type OwnershipStatus string
-
-const (
-	Owned     OwnershipStatus = "owned"
-	Mortgaged OwnershipStatus = "mortgaged"
-)
-
-type HouseData struct {
-	Ownership OwnershipStatus `json:"ownership_status" binding:"oneof=owned mortgaged,required"`
+func ProduceRiskProfile(rsh *RiskScoreHolder) RiskProfile {
+	rpfile := RiskProfile{}
+	rpfile.Auto = rsh.ConcludeFactorScore(Auto)
+	rpfile.Home = rsh.ConcludeFactorScore(Home)
+	rpfile.Disability = rsh.ConcludeFactorScore(Disability)
+	rpfile.Life = rsh.ConcludeFactorScore(Life)
+	return rpfile
 }
 
-type VehicleData struct {
-	Year uint `binding:"gt=0,required"`
+func MakeRiskScoreHolder(cinfo *ClientInformationRisks) *RiskScoreHolder {
+	rsholder := RiskScoreHolder{}
+	baseScore := cinfo.RiskQuestions.GetBaseRiskScore()
+	rsholder[Life] = baseScore
+	rsholder[Auto] = baseScore
+	rsholder[Disability] = baseScore
+	rsholder[Home] = baseScore
+	return &rsholder
 }

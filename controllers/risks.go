@@ -74,9 +74,8 @@ func ProduceRiskProfile(rsh *RiskScoreHolder) RiskProfile {
 func MakeRiskScoreHolder(cinfo *ClientInformationRisks) *RiskScoreHolder {
 	rsholder := RiskScoreHolder{}
 	baseScore := cinfo.RiskQuestions.GetBaseRiskScore()
-	rsholder[Life] = baseScore
-	rsholder[Auto] = baseScore
-	rsholder[Disability] = baseScore
-	rsholder[Home] = baseScore
+	for _, factor := range RiskFactorsColl {
+		rsholder[factor] = baseScore
+	}
 	return &rsholder
 }

@@ -24,17 +24,20 @@ func (rsh *RiskScoreHolder) AddScoreTo(key RiskFactor, val int) {
 
 func (rsh *RiskScoreHolder) ConcludeFactorScore(key RiskFactor) RiskScoreText {
 	score, ok := (*rsh)[key]
-	if !ok {
-		return Ineligible
-	}
+	var conclusion RiskScoreText
 
 	switch {
+	case !ok:
+		conclusion = Ineligible
 	case score <= 0:
-		return Economic
+		conclusion = Economic
 	case score >= 1 && score <= 2:
-		return Regular
+		conclusion = Regular
+	default:
+		conclusion = Responsible
 	}
-	return Responsible
+
+	return conclusion
 }
 
 type RiskFactor string
@@ -45,6 +48,10 @@ const (
 	Home       RiskFactor = "Home"
 	Auto       RiskFactor = "Auto"
 )
+
+var RiskFactorsColl = [...]RiskFactor{
+	Life, Disability, Home, Auto,
+}
 
 type RiskProfile struct {
 	Auto       RiskScoreText `json:"auto"`

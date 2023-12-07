@@ -59,10 +59,10 @@ func calculateRiskProfile(cinfo *ClientInformationRisks) RiskProfile {
 		rsholder.AddScoreTo(Auto, 1)
 	}
 
-	return ProduceRiskProfile(rsholder)
+	return concludeScoresIntoRiskProfile(rsholder)
 }
 
-func ProduceRiskProfile(rsh *RiskScoreHolder) RiskProfile {
+func concludeScoresIntoRiskProfile(rsh RiskScoreHolder) RiskProfile {
 	rpfile := RiskProfile{}
 	rpfile.Auto = rsh.ConcludeFactorScore(Auto)
 	rpfile.Home = rsh.ConcludeFactorScore(Home)
@@ -71,11 +71,11 @@ func ProduceRiskProfile(rsh *RiskScoreHolder) RiskProfile {
 	return rpfile
 }
 
-func MakeRiskScoreHolder(cinfo *ClientInformationRisks) *RiskScoreHolder {
+func MakeRiskScoreHolder(cinfo *ClientInformationRisks) RiskScoreHolder {
 	rsholder := RiskScoreHolder{}
 	baseScore := cinfo.RiskQuestions.GetBaseRiskScore()
 	for _, factor := range RiskFactorsColl {
 		rsholder[factor] = baseScore
 	}
-	return &rsholder
+	return rsholder
 }

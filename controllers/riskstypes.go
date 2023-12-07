@@ -10,8 +10,8 @@ func (rsh *RiskScoreHolder) AddToEveryField(val int) {
 	}
 }
 
-func (rsh RiskScoreHolder) SetIneligible(key RiskFactor) {
-	delete(rsh, key)
+func (rsh *RiskScoreHolder) SetIneligible(key RiskFactor) {
+	delete(*rsh, key)
 }
 
 func (rsh *RiskScoreHolder) AddScoreTo(key RiskFactor, val int) {

@@ -2,12 +2,17 @@
 
 Make sure that you have go compiler installed
 
-To simply run:
+To download all dependencies:
+```
+go mod download
+```
+
+To run (if you don't have the dependencies installed, it'll get them automatically):
 ```
 go run .
 ```
 
-To compile a binary with:
+To compile a binary:
 ```
 go build .
 ```
